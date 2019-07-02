@@ -61,3 +61,7 @@ import 'zone.js/dist/zone';  // Included with Angular CLI.
 /***************************************************************************************************
  * APPLICATION IMPORTS
  */
+/* fixes for this: https://stackoverflow.com/questions/50371593/angular-6-uncaught-referenceerror-buffer-is-not-defined/50377270#50377270 
+caused by mqttjs  */
+// (window as any).global = window;
+// global.Buffer = global.Buffer || require('buffer').Buffer;

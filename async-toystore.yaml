@@ -4,9 +4,9 @@ info:
   title: Hello world application
   version: '0.1.0'
 servers:
-  - url: broker.mycomapny.com
-    protocol: amqp
-    description: This is "My Company" broker.
+  - url: localhost:4222
+    protocol: nats
+    description: Nats broker
 channels:
   hello:
     publish:
