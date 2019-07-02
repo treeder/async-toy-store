@@ -48,6 +48,15 @@ cd app1
 make run
 ```
 
+Start UI:
+
+```sh
+cd store
+make run
+```
+
+Open UI at http://localhost:4200
+
 ## For Figuring out Later
 
 ### Nats
