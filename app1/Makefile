@@ -1,8 +1,8 @@
-.PHONY: dep run build docker release install test deploy
+.PHONY: dep run build build-prod docker release install test deploy
 
-build:
-	go build
+run:
+	ng serve --host 0.0.0.0 --disable-host-check
 
-run: build
-	./app1
+build-prod:
+	ng build --prod --aot
 
