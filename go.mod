@@ -1,4 +1,4 @@
-module github.com/treeder/async-toy-store/goapp
+module github.com/treeder/async-toy-store
 
 go 1.12
 

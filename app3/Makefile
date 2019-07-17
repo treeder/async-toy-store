@@ -4,5 +4,4 @@ build:
 	go build
 
 run: build
-	./app2
-
+	./app3

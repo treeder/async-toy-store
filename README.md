@@ -22,10 +22,8 @@ the payment processor at path `{URL_TO_SPEC}/orders_paid/publish` (JS Link?) sin
 
 ### Generating code
 
-Note: this part doesn't work yet, need more code generators.
-
-TODO: AsyncAPI needs to support more languages for generating code.
-TODO: AsyncAPI should also support various message brokers while generating code, if it doesn't already.
+* TODO: AsyncAPI needs to support more languages for generating code.
+* TODO: AsyncAPI should also support various message brokers while generating code, if it doesn't already.
 
 ```sh
 # should be once javascript is supported in new one: docker run --rm -it -v $PWD:/app -w /app treeder/asyncapi-gen node cli -o output orders.yaml javascript
@@ -35,31 +33,35 @@ docker run --rm -it -v $PWD:/app -w /app treeder/asyncapi-gen node ac LOOK IT UP
 
 ### Start Services
 
-Start nats server:
+Start Nats server:
 
 ```sh
 docker run --rm -it -d --name nats -p 4222:4222 -p 6222:6222 -p 8222:8222 nats
 ```
 
+Start MQTT (Mosquitto) server:
+
+```sh
+docker run --rm -it -d --name mosquitto -p 1883:1883 -p 9005:9005 -v $PWD/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto
+```
+
 Start payment processor app:
 
 ```sh
-cd app1
+cd app2
 make run
 ```
 
 Start UI:
 
 ```sh
-cd store
+cd app1
 make run
 ```
 
 Open UI at http://localhost:4200
 
 ## For Figuring out Later
-
-### Nats
 
 Unfortunately most message brockers don't work nicely directly from a browser, some requiring a websocket to tcp proxy and most of the client libraries expect Node libraries
 so they don't work in the browser. I added a simple REST proxy that the UI talks to for now.
