@@ -4,32 +4,11 @@ import {Client as MqttClient, Message as MqttMessage} from 'paho-mqtt'
 
 import { Order } from './order';
 
-// NONE OF THIS STUFF WORKS IN THE BROWSER... argggh
-// import { connect, Client } from 'ws-nats';
-// const MQTT = require("async-mqtt");
-// import { connect, MqttClient } from 'mqtt';
-// import { AsyncClient, IMqttClient } from 'async-mqtt';
-// import {
-//   IMqttMessage,
-//   MqttModule,
-//   IMqttServiceOptions,
-//   MqttService
-// } from 'ngx-mqtt';
-
-
-// const MQTT_SERVICE_OPTIONS: IMqttServiceOptions = {
-//   hostname: 'test.mosquitto.org',
-//   port: 8080,
-//   // path: '/mqtt'
-// };
-
 @Injectable({
   providedIn: 'root'
 })
 export class BrokerService {
 
-  // client: Client;
-  // client: AsyncClient;
   client: MqttClient;
 
   constructor(private http: HttpClient) {
@@ -45,8 +24,6 @@ export class BrokerService {
 
     // connect the client
     this.client.connect({ onSuccess: this.onConnect.bind(this) });
-
-
   }
 
   // called when the client connects 
@@ -72,19 +49,11 @@ export class BrokerService {
   }
 
   publish(channel: string, data: any) {
-    // try {
-    //   this.client.publish(channel, data);
-    // } catch (err) {
-    //   console.log("ERROR", err)
-    // }
-    // asyncClient.publish("foo/bar", "baz").then(() => {
-    // 	console.log("We async now");
-    // 	return asyncClient.end();
-    // });
 
     let order = new Order();
     order.id = "ABC";
     order.amount = 101.01;
+    
     // This one uses Nats proxy
     order.comment = "using nats"
     this.http.post<Order>("http://localhost:8080/nats", order)
