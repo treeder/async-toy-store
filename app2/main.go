@@ -58,7 +58,7 @@ func startProxy(c *nats.EncodedConn) {
 		fmt.Println("nats called")
 		// b, _ := ioutil.ReadAll(r.Body)
 		// fmt.Println("got:", string(b))
-		order := &Order{}
+		order := &models.Order{}
 		dec := json.NewDecoder(r.Body)
 		err := dec.Decode(order)
 		if err != nil {
@@ -69,7 +69,7 @@ func startProxy(c *nats.EncodedConn) {
 			// }
 		}
 		fmt.Printf("ORDER: %+v\n", order)
-		if err := c.Publish("orders", &Order{ID: "123", Amount: 101.01}); err != nil {
+		if err := c.Publish("orders", &models.Order{ID: "123", Amount: 101.01}); err != nil {
 			fmt.Println("error publishing:", err)
 			http.Error(w, "Error publishing", http.StatusInternalServerError)
 			return

@@ -4,9 +4,9 @@ Demo for AsyncAPI
 
 Parts:
 
-* a UI at /store to checkout and send the first "order" event/message
-* goapp represents payment processing. Subscribes to order events from browser and publishes enhanced event with Payment ID.
-* jsapp is fulfillment processing. Subscribes to order events from goapp and publishes enhanced event with tracking number.
+* app1: a UI at /store to checkout and send the first "order" event/message to a channel that app2 is subscribed to.
+* app2: is payment processing. Subscribes to order events from browser and publishes enhanced event with Payment ID.
+* app3: is fulfillment. Subscribes to order events produced from app2 and publishes enhanced event with tracking number.
 
 The client (browser UI) needs to know what the payment processor accepts, so it uses the payment processors AsyncAPI spec,
 much like it would use it's REST spec. From this it knows what server to send order events to and in what format. In this
@@ -23,7 +23,7 @@ the payment processor at path `{URL_TO_SPEC}/orders_paid/publish` (JS Link?) sin
 ### Generating code
 
 * TODO: AsyncAPI needs to support more languages for generating code.
-* TODO: AsyncAPI should also support various message brokers while generating code, if it doesn't already.
+* TODO: AsyncAPI should also support various message brokers while generating code.
 
 ```sh
 # should be once javascript is supported in new one: docker run --rm -it -v $PWD:/app -w /app treeder/asyncapi-gen node cli -o output orders.yaml javascript
@@ -45,17 +45,20 @@ Start MQTT (Mosquitto) server:
 docker run --rm -it -d --name mosquitto -p 1883:1883 -p 9005:9005 -v $PWD/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto
 ```
 
-Start payment processor app:
+Start all apps in different consoles:
+
+```sh
+cd app1
+make run
+```
 
 ```sh
 cd app2
 make run
 ```
 
-Start UI:
-
 ```sh
-cd app1
+cd app3
 make run
 ```
 
@@ -63,5 +66,4 @@ Open UI at http://localhost:4200
 
 ## For Figuring out Later
 
-Unfortunately most message brockers don't work nicely directly from a browser, some requiring a websocket to tcp proxy and most of the client libraries expect Node libraries
-so they don't work in the browser. I added a simple REST proxy that the UI talks to for now.
+Unfortunately most message brockers don't work nicely directly from a browser, some requiring a websocket to tcp proxy and most of the client libraries expect Node libraries so they don't work in the browser. I added a simple REST proxy that the UI can talk to.
