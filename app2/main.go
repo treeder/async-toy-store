@@ -14,6 +14,7 @@ import (
 
 func main() {
 
+	// todo: move this into brokers/nats package, then use the /brokers interfaces here
 	nc, err := nats.Connect("nats://localhost:4222")
 	if err != nil {
 		log.Fatal(err)

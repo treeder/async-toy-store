@@ -1,0 +1,15 @@
+asyncapi: '2.0.0-rc1'
+id: 'urn:fulfillment'
+info:
+  title: Fulfillment
+  version: '0.1.0'
+servers:
+  - url: broker.mycompany.com:9005
+    protocol: mqtt
+channels:
+  orders_paid:
+    subscribe:
+# TODO: I want to subscribe to a channel in app2, would be nice not to duplicate it here.
+  orders_shipped:
+    publish:
+# TODO: I want to add an additional field to the "order" object defined in app2 and use it here

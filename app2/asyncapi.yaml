@@ -27,5 +27,5 @@ components:
             type: string
           amount:
             type: number
-            description: The date and time a message was sent.
-            format: datetime
+          comment:
+            type: string

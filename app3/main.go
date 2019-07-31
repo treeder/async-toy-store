@@ -11,6 +11,8 @@ import (
 )
 
 func main() {
+
+	// todo: move this into brokers/mqtt package, then use the /brokers interfaces here
 	c := mqtt.NewClient(mqtt.NewClientOptions().AddBroker("ws://localhost:9005"))
 	token := c.Connect()
 	token.Wait()
@@ -20,6 +22,7 @@ func main() {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	// todo: this is just grabbing it from the browser order, should grab it from payment processing
 	c.Subscribe("orders", 1, func(client mqtt.Client, msg mqtt.Message) {
 		fmt.Printf("app3: Received an order: %+v\n", msg)
 		order := &models.Order{}
