@@ -1,7 +1,7 @@
 package brokers
 
 type Broker interface {
-	Publish(topic string, message interface{}) error
+	Publish(topic string, message Message) error
 	Subscribe(topic string, handler Handler)
 }
 
