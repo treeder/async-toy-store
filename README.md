@@ -66,4 +66,8 @@ Open UI at http://localhost:4200
 
 ## For Figuring out Later
 
-Unfortunately most message brockers don't work nicely directly from a browser, some requiring a websocket to tcp proxy and most of the client libraries expect Node libraries so they don't work in the browser. I added a simple REST proxy that the UI can talk to.
+Unfortunately most message brokers don't work nicely directly from a browser, some requiring a websocket to tcp proxy and most of the client libraries expect Node libraries so they don't work in the browser. I added a simple REST proxy that the UI can talk to.
+
+## TODO
+
+* [ ] Maybe make the Message object we're passing around a CloudEvent object instead?
