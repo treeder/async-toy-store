@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {Client as MqttClient, Message as MqttMessage} from 'paho-mqtt'
+import { Client as MqttClient, Message as MqttMessage } from 'paho-mqtt'
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 
 import { Order } from './order';
@@ -64,15 +64,6 @@ export class BrokerService {
     msg.channel = channel;
     msg.reply_channel = "orders_status";
     msg.payload = order;
-    
-    // This one uses Nats proxy
-    order.comment = "using nats"
-    this.http.post<Order>("http://localhost:8080/nats", msg)
-      .pipe(
-        // catchError(err => console.log("ERROR:", err))
-      ).subscribe(response => {
-        console.log("response:", response);
-      })
 
     // This one uses Paho MQTT, seems to be the only one that works in a browser
     order.comment = "using mqtt"
@@ -85,6 +76,17 @@ export class BrokerService {
     // todo: should wrap the object in a Message object that states the channel
     order.comment = "websocket"
     this.wsSubject.next(msg);
+
+    // This one uses our REST proxy
+    msg.channel = "orders2" // send it to different channel so we don't process this twice
+    order.comment = "using nats"
+    this.http.post<Order>("http://localhost:8080/nats", msg)
+      .pipe(
+        // catchError(err => console.log("ERROR:", err))
+      ).subscribe(response => {
+        console.log("response:", response);
+      })
+
 
   }
 

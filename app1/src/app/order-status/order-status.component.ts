@@ -9,7 +9,7 @@ import { Order } from '../order';
 })
 export class OrderStatusComponent implements OnInit {
 
-  order: Order;
+  statuses: Order[] = [];
 
   constructor(private broker: BrokerService) { }
 
@@ -19,7 +19,7 @@ export class OrderStatusComponent implements OnInit {
         return
       }
       console.log("orders_status message:", response);
-      this.order = response.payload;
+      this.statuses.push(response.payload);
     })
   }
 

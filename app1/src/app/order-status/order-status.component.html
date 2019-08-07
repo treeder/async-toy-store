@@ -1,5 +1,9 @@
 <h2>Order Status</h2>
 
-<div *ngIf="order">
-{{ order.status }}
+<div style="margin: 0 auto; width: 400px;">
+    <ol>
+        <li *ngFor="let order of statuses">
+            {{ order.status }}
+        </li>
+    </ol>
 </div>
