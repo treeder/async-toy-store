@@ -45,6 +45,12 @@ Start MQTT (Mosquitto) server:
 docker run --rm -it -d --name mosquitto -p 1883:1883 -p 9005:9005 -v $PWD/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto
 ```
 
+Start RabbitMQ server:
+
+```sh
+docker run --rm -it -d --name rabbit -p 5672:5672 --hostname my-rabbit rabbitmq:3-alpine
+```
+
 Start all apps in different consoles:
 
 ```sh

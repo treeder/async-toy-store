@@ -8,5 +8,6 @@ require (
 	github.com/nats-io/nats-server/v2 v2.0.2 // indirect
 	github.com/nats-io/nats.go v1.8.1
 	github.com/rs/cors v1.6.0
+	github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 )
