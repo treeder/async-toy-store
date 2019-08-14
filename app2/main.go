@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"context"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	nats "github.com/nats-io/nats.go"
 	"github.com/rs/cors"
 	"github.com/streadway/amqp"
 	"github.com/treeder/async-toy-store/models"
+	"github.com/treeder/async-toy-store/brokers/auto" 
+	"github.com/treeder/async-toy-store/brokers" 
 )
 
 const (
@@ -21,25 +23,22 @@ const (
 )
 
 var (
-	natsClient *nats.EncodedConn
+	natsClient brokers.Broker
 	mqttClient mqtt.Client
 	amqpClient *amqp.Connection
 )
 
 func main() {
 
+	ctx := context.Background()
+	
 	// Connect to NATS
 	// todo: move this into brokers/nats package, then use the /brokers interfaces here
-	nc, err := nats.Connect("nats://localhost:4222")
+	natsClient, err := auto.Connect(ctx, "nats://localhost:4222")
 	if err != nil {
 		log.Fatalf("nats: %v", err)
 	}
-	c, err := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
-	if err != nil {
-		log.Fatalf("nats: %v", err)
-	}
-	defer c.Close()
-	natsClient = c
+	defer natsClient.Close()
 
 	// Connect to MQTT
 	// todo: move this into brokers/mqtt package, then use the /brokers interfaces here
@@ -59,12 +58,12 @@ func main() {
 	defer conn.Close()
 
 	// Starts our REST/WebSockets API proxy so browsers can connect
-	go startProxy(c)
+	go startProxy(natsClient)
 
 	// Now subscribe
 	var wg sync.WaitGroup
 	wg.Add(1)
-	c.Subscribe("orders", func(msg *models.Message) {
+	natsClient.Subscribe(ctx, "orders", func(msg *models.Message) {
 		fmt.Printf("Received a message on orders channel: %+v\n", msg)
 		o, err := models.ParseOrder(msg.Payload)
 		if err != nil {
@@ -89,15 +88,15 @@ func main() {
 			return
 		}
 		msg2 := &models.Message{Channel: paidChannel, ReplyChannel: msg.ReplyChannel, Payload: payload}
-
-		// Put on next queue for others who are interested (ie: fulfillment)
-		if err := c.Publish(paidChannel, msg2); err != nil {
-			fmt.Printf("error publishing to %v: %v\n", paidChannel, err)
-			return
-		}
 		msg2marshalled, err := json.Marshal(msg2)
 		if err != nil {
 			fmt.Printf("error marshalling msg2 for %v: %v\n", paidChannel, err)
+			return
+		}
+
+		// Put on next queue for others who are interested (ie: fulfillment)
+		if err := natsClient.Publish(ctx, paidChannel, msg2); err != nil {
+			fmt.Printf("error publishing to %v: %v\n", paidChannel, err)
 			return
 		}
 		// also put on MQTT queue
@@ -138,7 +137,7 @@ func main() {
 		// put a reply on reply channel
 		if msg.ReplyChannel != "" {
 			msg2 := &models.Message{Channel: msg.ReplyChannel, Payload: payload}
-			if err := c.Publish(msg.ReplyChannel, msg2); err != nil {
+			if err := natsClient.Publish(ctx, msg.ReplyChannel, msg2); err != nil {
 				fmt.Println("error publishing to orders_status:", err)
 				return
 			}
@@ -152,20 +151,22 @@ func main() {
 
 // This is a simple http proxy to nats, since there is almost no broker that seems to be able to work directly from the browser
 // todo: move this into a separate utility that could do this for all brokers
-func startProxy(c *nats.EncodedConn) {
+func startProxy(c brokers.Broker) {
 
 	mux := http.NewServeMux()
-	mux.Handle("/nats", &natsHandler{c: c})
+	// mux.Handle("/nats", &natsHandler{c: c})
 	mux.Handle("/ws", &webSocketHandler{c: c})
 	handler := cors.Default().Handler(mux)
 	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
+// this is a REST proxy endpoint
 type natsHandler struct {
-	c *nats.EncodedConn
+	c brokers.Broker
 }
 
 func (h *natsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	fmt.Println("nats called")
 
 	data, err := ioutil.ReadAll(r.Body)
@@ -175,7 +176,7 @@ func (h *natsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = parseAndPublish(data)
+	err = parseAndPublish(ctx, data)
 	if err != nil {
 		fmt.Println("error:", err)
 		http.Error(w, "Error", http.StatusInternalServerError)
@@ -184,18 +185,18 @@ func (h *natsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, ack)
 }
 
-func parseAndPublish(data []byte) error {
-	msg, _, err := models.ParseMessage(data)
+func parseAndPublish(ctx context.Context, data []byte) error {
+	msg, err := models.ParseMessage(data)
 	if err != nil {
 		fmt.Println("error:", err)
 		return err
 	}
 
-	if err := natsClient.Publish(msg.Channel, msg); err != nil {
+	if err := natsClient.Publish(ctx, msg.Channel, msg); err != nil {
 		fmt.Println("error publishing:", err)
 		return err
 	}
 	// Make sure the message goes through before we close
-	natsClient.Flush()
+	// natsClient.Flush()w
 	return nil
 }
