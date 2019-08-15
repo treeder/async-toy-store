@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="f9e1f0d6-6c9b-43a1-b092-9dab1dc4c014" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<flow name="simplekafkaFlow" doc:id="546782d0-bbef-4c04-a650-93d165270652" >
+		<http:listener doc:name="Listener" doc:id="b60481c6-25c4-46e4-afbf-a7e21c192c92" config-ref="HTTP_Listener_config" path="/hello"/>
+		<set-payload value='hello' doc:name="Set Payload" doc:id="365ff41b-a2b7-42a8-8178-a97e4a80c58a" />
+	</flow>
+</mule>
