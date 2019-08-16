@@ -69,6 +69,11 @@ cd app3
 make run
 ```
 
+
+```sh
+cd muleApp
+sh buildAndRun.sh```
+
 Open UI at http://localhost:4200
 
 ## For Figuring out Later
