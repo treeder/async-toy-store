@@ -7,7 +7,7 @@ Parts:
 * app1: a UI at /store to checkout and send the first "order" event/message to a channel that app2 is subscribed to.
 * app2: is payment processing. Subscribes to order events from browser and publishes enhanced event with Payment ID.
 * app3: is fulfillment. Subscribes to order events produced from app2 and publishes enhanced event with tracking number.
-* muleapp: is processing events from the orders_paid channel, enriching them with customer data and putting them in the orders_status channel
+* muleapp: is processing events from the orders_paid channel, enriching them with customer data and putting them in the orders_status channel.
 
 The client (browser UI) needs to know what the payment processor accepts, so it uses the payment processors AsyncAPI spec,
 much like it would use it's REST spec. From this it knows what server to send order events to and in what format. In this
