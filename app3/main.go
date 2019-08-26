@@ -1,51 +1,52 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
 	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
-	nats "github.com/nats-io/nats.go"
+	"github.com/treeder/async-toy-store/brokers"
+	"github.com/treeder/async-toy-store/brokers/auto"
 	"github.com/treeder/async-toy-store/models"
 )
 
 var (
-	natsClient *nats.EncodedConn
-	mqttClient mqtt.Client
+	natsClient brokers.Broker
+	mqttClient brokers.Broker
 )
 
 func main() {
+	ctx := context.Background()
+	var err error
 
 	// Connect to NATS
-	// todo: move this into brokers/nats package, then use the /brokers interfaces here
-	nc, err := nats.Connect("nats://localhost:4222")
+	natsClient, err = auto.Connect(ctx, "nats://localhost:4222")
 	if err != nil {
-		log.Fatal(err)
-	}
-	natsClient, err = nats.NewEncodedConn(nc, nats.JSON_ENCODER)
-	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("nats: %v", err)
 	}
 	defer natsClient.Close()
 
 	// Connect to MQTT
-	// todo: move this into brokers/mqtt package, then use the /brokers interfaces here
-	mqttClient = mqtt.NewClient(mqtt.NewClientOptions().AddBroker("ws://localhost:9005"))
-	token := mqttClient.Connect()
-	token.Wait()
-	if token.Error() != nil {
-		log.Fatal(token.Error())
+	mqttClient, err = auto.Connect(ctx, "mqtt+ws://localhost:9005")
+	if err != nil {
+		log.Fatalf("mqtt: %v", err)
 	}
+	defer mqttClient.Close()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 	// todo: this is just grabbing it from the browser order, should grab it from payment processing
-	mqttClient.Subscribe("orders_paid", 1, func(client mqtt.Client, mqttMsg mqtt.Message) {
-		fmt.Printf("app3: Received an order: %+v\n", mqttMsg)
-		msg, order, err := models.ParseMessage(mqttMsg.Payload())
+	mqttClient.Subscribe(ctx, "orders_paid", func(msg *models.Message) {
+		fmt.Printf("app3: Received an order: %+v\n", msg)
+		// msg, err := models.ParseMessage(msg.Payload())
+		// if err != nil {
+		// 	fmt.Println("error:", err)
+		// 	return
+		// }
+		order, err := models.ParseOrder(msg.Payload)
 		if err != nil {
 			fmt.Println("error:", err)
 			return
@@ -67,11 +68,10 @@ func main() {
 			msg2 := &models.Message{Channel: msg.ReplyChannel, Payload: payload}
 			// this should end up back at the browser
 			// TODO: there's not enough information in the message to know which broker to send this to...
-			if err := natsClient.Publish("orders_status", msg2); err != nil {
+			if err := natsClient.Publish(ctx, "orders_status", msg2); err != nil {
 				fmt.Println("error publishing to orders_status:", err)
 			}
 		}
-
 		// wg.Done()
 	})
 	fmt.Println("app3: Waiting for orders_paid...")

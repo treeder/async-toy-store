@@ -6,9 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/treeder/async-toy-store/models"
 	"github.com/treeder/async-toy-store/brokers"
-
+	"github.com/treeder/async-toy-store/models"
 )
 
 var upgrader = websocket.Upgrader{} // use default options
@@ -20,7 +19,7 @@ type webSocketHandler struct {
 
 // I can see this being it's own "thing" that connects things together with one interface.
 // It sits in front of and exposes the brokers.
-// todo: what about auth?
+// todo: what about auth?  Auth could be performed on original connection use HTTP auth
 func (h *webSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// todo: this should check acceptable origins list
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }

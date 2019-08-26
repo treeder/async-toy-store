@@ -2,6 +2,7 @@ package nats
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	natsgo "github.com/nats-io/nats.go"
@@ -10,20 +11,12 @@ import (
 )
 
 func Connect(ctx context.Context, urlStr string) (*Broker, error) {
-	nc, err := natsgo.Connect("nats://localhost:4222")
+	nc, err := natsgo.Connect(urlStr)
 	if err != nil {
 		return nil, err
 	}
 	b := &Broker{nc: nc}
-
-	// c, err := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
-	// if err != nil {
-	// 	log.Fatalf("nats: %v", err)
-	// }
-	// defer nc.Close()
-
 	return b, nil
-
 }
 
 type Broker struct {
@@ -31,9 +24,14 @@ type Broker struct {
 }
 
 func (b *Broker) Publish(ctx context.Context, channel string, msg *models.Message) error {
-	return b.nc.Publish(channel, msg.Payload)
+	// should this pass along the full wrapped Message or the Payload only?
+	msgMarshalled, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return b.nc.Publish(channel, msgMarshalled)
 }
-func (b *Broker) Subscribe(ctx context.Context, channel string, handler brokers.Handler)(brokers.Subscription, error) {
+func (b *Broker) Subscribe(ctx context.Context, channel string, handler brokers.Handler) (brokers.Subscription, error) {
 	sub, err := b.nc.Subscribe(channel, func(m *natsgo.Msg) {
 		msg, err := models.ParseMessage(m.Data)
 		if err != nil {
@@ -50,7 +48,7 @@ func (b *Broker) Close() {
 }
 
 type Subscription struct {
-sub *natsgo.Subscription
+	sub *natsgo.Subscription
 }
 
 func (s *Subscription) Unsubscribe() error {

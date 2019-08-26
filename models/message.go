@@ -21,7 +21,6 @@ func ParseMessage(data []byte) (*Message, error) {
 		fmt.Println("error:", err)
 		return nil, err
 	}
-	fmt.Printf("MSG: %+v\n", msg)
 	return msg, nil
 }
 
@@ -33,6 +32,5 @@ func ParseOrder(data []byte) (*Order, error) {
 		fmt.Println("error:", err)
 		return nil, err
 	}
-	fmt.Printf("ORDER: %+v\n", order)
 	return order, nil
 }

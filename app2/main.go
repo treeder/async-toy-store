@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,14 +9,11 @@ import (
 	"net/http"
 	"sync"
 	"time"
-	"context"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/rs/cors"
-	"github.com/streadway/amqp"
+	"github.com/treeder/async-toy-store/brokers"
+	"github.com/treeder/async-toy-store/brokers/auto"
 	"github.com/treeder/async-toy-store/models"
-	"github.com/treeder/async-toy-store/brokers/auto" 
-	"github.com/treeder/async-toy-store/brokers" 
 )
 
 const (
@@ -24,38 +22,35 @@ const (
 
 var (
 	natsClient brokers.Broker
-	mqttClient mqtt.Client
-	amqpClient *amqp.Connection
+	mqttClient brokers.Broker
+	amqpClient brokers.Broker
 )
 
 func main() {
 
 	ctx := context.Background()
-	
+	var err error
+
 	// Connect to NATS
-	// todo: move this into brokers/nats package, then use the /brokers interfaces here
-	natsClient, err := auto.Connect(ctx, "nats://localhost:4222")
+	natsClient, err = auto.Connect(ctx, "nats://localhost:4222")
 	if err != nil {
 		log.Fatalf("nats: %v", err)
 	}
 	defer natsClient.Close()
 
 	// Connect to MQTT
-	// todo: move this into brokers/mqtt package, then use the /brokers interfaces here
-	mqttClient = mqtt.NewClient(mqtt.NewClientOptions().AddBroker("ws://localhost:9005"))
-	token := mqttClient.Connect()
-	token.Wait()
-	if token.Error() != nil {
-		log.Fatalf("mqtt: %v", token.Error())
+	mqttClient, err = auto.Connect(ctx, "mqtt+ws://localhost:9005")
+	if err != nil {
+		log.Fatalf("mqtt: %v", err)
 	}
+	defer mqttClient.Close()
 
 	// Connect to RabbitMQ
-	// More info: https://www.rabbitmq.com/tutorials/tutorial-one-go.html
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	amqpClient, err = auto.Connect(ctx, "amqp://guest:guest@localhost:5672/")
 	if err != nil {
-		log.Fatalf("rabbit: %v", err)
+		log.Fatalf("amqp: %v", err)
 	}
-	defer conn.Close()
+	defer amqpClient.Close()
 
 	// Starts our REST/WebSockets API proxy so browsers can connect
 	go startProxy(natsClient)
@@ -88,7 +83,6 @@ func main() {
 			return
 		}
 		msg2 := &models.Message{Channel: paidChannel, ReplyChannel: msg.ReplyChannel, Payload: payload}
-		msg2marshalled, err := json.Marshal(msg2)
 		if err != nil {
 			fmt.Printf("error marshalling msg2 for %v: %v\n", paidChannel, err)
 			return
@@ -99,40 +93,18 @@ func main() {
 			fmt.Printf("error publishing to %v: %v\n", paidChannel, err)
 			return
 		}
+
 		// also put on MQTT queue
-		token2 := mqttClient.Publish(paidChannel, 1, false, msg2marshalled)
-		token2.Wait()
-		if token2.Error() != nil {
-			log.Fatal(token2.Error())
-		}
-		// and why not RabbitMQ too? :)
-		// todo: probably just want to get a channel once on init
-		ch, err := conn.Channel()
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer ch.Close()
-		q, err := ch.QueueDeclare(
-			paidChannel, // name
-			false,       // durable
-			false,       // delete when unused
-			false,       // exclusive
-			false,       // no-wait
-			nil,         // arguments
-		)
-		if err != nil {
-			log.Fatal(err)
+		if err := mqttClient.Publish(ctx, paidChannel, msg2); err != nil {
+			fmt.Printf("error publishing to %v: %v\n", paidChannel, err)
+			return
 		}
 
-		err = ch.Publish(
-			"",     // exchange
-			q.Name, // routing key
-			false,  // mandatory
-			false,  // immediate
-			amqp.Publishing{
-				ContentType: "text/plain",
-				Body:        msg2marshalled,
-			})
+		// and why not RabbitMQ too? :)
+		if err := amqpClient.Publish(ctx, paidChannel, msg2); err != nil {
+			fmt.Printf("error publishing to %v: %v\n", paidChannel, err)
+			return
+		}
 
 		// put a reply on reply channel
 		if msg.ReplyChannel != "" {
@@ -144,7 +116,7 @@ func main() {
 		}
 		fmt.Printf("order published to %v\n", paidChannel)
 	})
-	fmt.Println("Waiting for orders...")
+	fmt.Println("app2: Waiting for orders...")
 	wg.Wait()
 
 }
